@@ -18,7 +18,7 @@ const API_OPTIONS = {
   method: "GET",
   headers: {
     accept: "application/json",
-    Authorization: `Bearer ${API_KEY}`,
+    ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
   },
 };
 
@@ -43,6 +43,12 @@ const App = () => {
     setErrorMessage("");
 
     try {
+      if (!API_KEY) {
+        setMoviesList([]);
+        setErrorMessage("Movie data is unavailable because the TMDB API key is missing.");
+        return;
+      }
+
       const endpoint = query
         ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
         : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
@@ -50,7 +56,7 @@ const App = () => {
       const response = await fetch(endpoint, API_OPTIONS);
 
       if (!response.ok) {
-        throw new Error("Failed to fetch movies.");
+        throw new Error(`TMDB request failed with status ${response.status}`);
       }
 
       const data = await response.json();
@@ -65,7 +71,8 @@ const App = () => {
       }
     } catch (error) {
       console.error(error);
-      setErrorMessage("Failed to fetch movies.");
+      setMoviesList([]);
+      setErrorMessage("Failed to fetch movies. Please check the TMDB API configuration.");
     } finally {
       setLoading(false);
     }
